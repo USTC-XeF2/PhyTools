@@ -1,1 +1,25 @@
 @import "tailwindcss";
+
+@layer components {
+  .container-box, .container-btn {
+    @apply border-2 border-blue-200 rounded-lg shadow hover:shadow-md;
+  }
+  .container-btn {
+    @apply w-full p-2 cursor-pointer text-center text-blue-400 hover:bg-blue-50;
+  }
+  .idx-mark, .del-mark {
+    @apply absolute z-30 text-blue-400 bg-blue-100 text-sm;
+  }
+  .del-mark {
+    @apply cursor-pointer hover:text-red-500 hover:bg-red-100;
+  }
+  .mq-editable-field {
+    @apply !flex items-center h-full !border-none !shadow-none;
+  }
+  .plain-ipt {
+    @apply border border-gray-300 rounded outline-none px-2 py-1;
+  }
+  .output-item {
+    @apply flex items-center border-t border-gray-300 p-2;
+  }
+}
