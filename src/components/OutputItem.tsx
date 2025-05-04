@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { convertAsciiMathToExpr, mean, uncertainty } from "../utils/math-core";
+import { mean, uncertainty } from "../utils/math-core";
 
 import type { Measurement, Output } from "../types";
 
@@ -38,7 +38,8 @@ function OutputItem({
   onRemove,
 }: OutputItemProps) {
   const measurement =
-    measurements.find((m) => m.name && m.name === output.name) || null;
+    measurements.find((m) => m.name.expr && m.name.expr === output.name) ||
+    null;
   const [precisions, setPrecisions] = useState<number[]>([4, 3, 2, 3]);
 
   const [meanNum, uncNum, unitStr, error] = useMemo(() => {
@@ -129,9 +130,9 @@ function OutputItem({
           <option value="">选择变量</option>
           {measurements.map(
             (m) =>
-              m.name && (
-                <option key={m.name} value={m.name}>
-                  {convertAsciiMathToExpr(m.name)}
+              m.name.expr && (
+                <option key={m.name.expr} value={m.name.expr}>
+                  {m.name.expr}
                 </option>
               ),
           )}

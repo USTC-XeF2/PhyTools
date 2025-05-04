@@ -17,6 +17,11 @@ function MeasurementList({
   measurements,
   setMeasurements,
 }: MeasurementListProps) {
+  const isNameExist = useCallback(
+    (latex: string) =>
+      measurements.filter((m) => m.name.latex === latex).length > 1,
+    [measurements],
+  );
   const changeMeasurement = useCallback(
     (index: number, measurement: Measurement) =>
       setMeasurements(
@@ -32,9 +37,7 @@ function MeasurementList({
           key={mea.id}
           mIndex={idx}
           measurement={mea}
-          isNameExist={(name) =>
-            measurements.some((m, i) => m.name === name && i !== idx)
-          }
+          isNameExist={isNameExist}
           changeMeasurement={(m) => changeMeasurement(idx, m)}
           deleteMeasurement={() =>
             setMeasurements(measurements.filter((_, i) => i !== idx))

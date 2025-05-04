@@ -1,19 +1,17 @@
-import { convertAsciiMathToLatex } from "mathlive/ssr";
-
-import { convertAsciiMathToExpr, parseExpr } from "./math-core";
+import { parseAM } from "./math-core";
 
 import type { DirectMeasurement, CompositeMeasurement, Output } from "../types";
 
 const geneId = () => Math.floor(Math.random() * 16 ** 8).toString(16);
 
 export const createDirectMeasurement = (
-  name: string = "",
+  amName: string = "",
   unit: string = "",
   ...uB: string[]
 ): DirectMeasurement => ({
   id: geneId(),
   type: "direct",
-  name,
+  name: parseAM(amName),
   values: [],
   unit,
   uncertaintyB: uB.concat(Array(2 - uB.length).fill("")).map((u) => ({
@@ -25,15 +23,13 @@ export const createDirectMeasurement = (
 });
 
 export const createCompositeMeasurement = (
-  name: string = "",
-  expr: string = "",
+  amName: string = "",
+  formula: string = "",
 ): CompositeMeasurement => ({
   id: geneId(),
   type: "composite",
-  name,
-  latex: expr ? convertAsciiMathToLatex(expr) : "",
-  expr: convertAsciiMathToExpr(expr),
-  parsedExpr: expr ? parseExpr(convertAsciiMathToExpr(expr)) : null,
+  name: parseAM(amName),
+  formula: parseAM(formula),
 });
 
 export const createOutput = (

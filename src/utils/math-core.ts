@@ -8,28 +8,35 @@ import {
   sum,
   unit,
 } from "mathjs";
-import { convertLatexToAsciiMath } from "mathlive/ssr";
+import { convertAsciiMathToLatex, convertLatexToAsciiMath } from "mathlive/ssr";
 
 import type { MathType, Unit } from "mathjs";
 import type { Measurement, CompositeMeasurement } from "../types";
 
 const MATH_CONSTANTS = ["pi", "e", "sin", "cos", "ln"];
 
-export const convertAsciiMathToExpr = (asciimath: string) =>
-  asciimath
-    .replace(/_\((\w+)\)/g, (_, p) => `_${p}`)
-    .replace(/([a-zA-Z])\^([a-zA-Z])/g, (_, a, b) => `${a}^(${b})`);
-
-export const convertLatexToExpr = (latex: string) =>
-  convertAsciiMathToExpr(convertLatexToAsciiMath(latex));
-
 export const parseExpr = (expr: string) => {
+  if (!expr) return null;
   try {
     return parse(expr);
   } catch {
     return null;
   }
 };
+
+export const parseAM = (asciiMath: string, latex?: string) => {
+  const expr = asciiMath
+    .replace(/_\((\w+)\)/g, (_, p) => `_${p}`)
+    .replace(/([a-zA-Z])\^([a-zA-Z])/g, (_, a, b) => `${a}^(${b})`);
+  return {
+    latex: latex || convertAsciiMathToLatex(asciiMath),
+    expr,
+    parsedExpr: parseExpr(expr),
+  };
+};
+
+export const parseLatex = (latex: string) =>
+  parseAM(convertLatexToAsciiMath(latex), latex);
 
 export const parseUnit = (s: string) => {
   try {
@@ -61,16 +68,14 @@ const getDependency = (
   measurement: CompositeMeasurement,
   measurements: Measurement[],
 ) => {
-  const node = measurement.parsedExpr;
+  const node = measurement.formula.parsedExpr;
   if (!node) throw "未解析的表达式";
   return node
     .filter((node) => node.type === "SymbolNode")
     .reduce((acc, node) => {
       const name = node.toString();
       if (!MATH_CONSTANTS.includes(name)) {
-        const meas = measurements.find(
-          (m) => convertLatexToExpr(m.name) === name,
-        );
+        const meas = measurements.find((m) => m.name.expr === name);
         if (meas && meas !== measurement) {
           acc.push(meas);
         } else {
@@ -89,7 +94,7 @@ const getMeanValues = (
   for (const meas of dependency) {
     const value = mean(meas, measurements);
     if (value === null) return null;
-    meanValues[convertAsciiMathToExpr(meas.name)] = value;
+    meanValues[meas.name.expr] = value;
   }
   return meanValues;
 };
@@ -104,7 +109,7 @@ export const mean = (measurement: Measurement, measurements: Measurement[]) => {
   const meanValues = getMeanValues(dependency, measurements);
   if (meanValues === null) return null;
   try {
-    return changeToUnit(evaluate(measurement.expr, meanValues));
+    return changeToUnit(evaluate(measurement.formula.expr, meanValues));
   } catch {
     throw "表达式单位不一致";
   }
@@ -146,10 +151,9 @@ const getU2 = (
         multiply(
           getU2(meas, measurements) as Unit, // 由于mean存在，u2i不可能为null
           pow(
-            derivative(
-              measurement.expr,
-              convertAsciiMathToExpr(meas.name),
-            ).evaluate(meanValues),
+            derivative(measurement.formula.expr, meas.name.expr).evaluate(
+              meanValues,
+            ),
             2,
           ),
         ) as Unit,

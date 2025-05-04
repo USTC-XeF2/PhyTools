@@ -1,15 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { mean, variance } from "mathjs";
 import { EditableMathField } from "react-mathquill";
-import { convertAsciiMathToLatex, convertLatexToAsciiMath } from "mathlive/ssr";
 
-import {
-  convertAsciiMathToExpr,
-  convertLatexToExpr,
-  parseExpr,
-  parseUnit,
-  parseUB,
-} from "../utils/math-core";
+import { parseLatex, parseUnit, parseUB } from "../utils/math-core";
 
 import type {
   Distribution,
@@ -272,17 +265,20 @@ function CompositePanel({
   measurement,
   changeMeasurement,
 }: CompositePanelProps) {
-  const [latex, setLatex] = useState<string>(measurement.latex);
-  const expr = convertLatexToExpr(latex);
-  const parsedExpr = parseExpr(expr);
-
+  const iptLatex = useRef(measurement.formula.latex);
+  const { latex, parsedExpr } = measurement.formula;
   return (
     <div className={`relative min-h-12 rounded-r-lg ${showRing(parsedExpr)}`}>
       <EditableMathField
         latex={latex}
-        onChange={(mathField) => setLatex(mathField.latex())}
+        onChange={(mathField) => {
+          iptLatex.current = mathField.latex();
+        }}
         onBlur={() =>
-          changeMeasurement({ ...measurement, latex, expr, parsedExpr })
+          changeMeasurement({
+            ...measurement,
+            formula: parseLatex(iptLatex.current),
+          })
         }
         className="w-full px-2 py-1"
       />
@@ -302,34 +298,14 @@ function MeasurementItem({
   changeMeasurement,
   deleteMeasurement,
 }: MeasurementItemProps) {
-  const [latexName, setLatexName] = useState(
-    convertAsciiMathToLatex(measurement.name),
+  const { type, name } = measurement;
+  const nameValidity = useMemo(
+    () =>
+      !name.latex.startsWith("\\") &&
+      name.parsedExpr?.type === "SymbolNode" &&
+      !isNameExist(name.latex),
+    [name, isNameExist],
   );
-  const [nameValidity, setNameValidity] = useState(true);
-
-  function handleChangeName(latex: string) {
-    setLatexName(latex);
-    const name = convertLatexToAsciiMath(latex);
-    const valid =
-      !latex.startsWith("\\") &&
-      parseExpr(convertAsciiMathToExpr(name))?.type === "SymbolNode" &&
-      !isNameExist(latex);
-    setNameValidity(valid);
-    if (!latex || valid) changeMeasurement({ ...measurement, name });
-  }
-
-  const panel =
-    measurement.type === "direct" ? (
-      <DirectPanel
-        measurement={measurement}
-        changeMeasurement={changeMeasurement}
-      />
-    ) : (
-      <CompositePanel
-        measurement={measurement}
-        changeMeasurement={changeMeasurement}
-      />
-    );
 
   return (
     <div className="container-box relative flex">
@@ -338,13 +314,28 @@ function MeasurementItem({
       </div>
       <div className={`rounded-l-lg ${showRing(nameValidity)}`}>
         <EditableMathField
-          latex={latexName}
-          onChange={(mathField) => handleChangeName(mathField.latex())}
+          latex={name.latex}
+          onChange={(mathField) =>
+            changeMeasurement({
+              ...measurement,
+              name: parseLatex(mathField.latex()),
+            })
+          }
           className="w-14 px-1 py-1 text-center"
         />
       </div>
       <div className="flex flex-col w-full border-l-2 border-blue-200 ">
-        {panel}
+        {type === "direct" ? (
+          <DirectPanel
+            measurement={measurement}
+            changeMeasurement={changeMeasurement}
+          />
+        ) : (
+          <CompositePanel
+            measurement={measurement}
+            changeMeasurement={changeMeasurement}
+          />
+        )}
       </div>
       <button
         onClick={deleteMeasurement}

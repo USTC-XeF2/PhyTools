@@ -1,12 +1,18 @@
 import type { MathNode } from "mathjs";
 
-export type Distribution = "normal" | "uniform" | "triangular" | "none";
+interface Expr {
+  latex: string;
+  expr: string;
+  parsedExpr: MathNode?;
+}
 
 interface BaseMeasurement {
   id: string;
   type: string;
-  name: string;
+  name: Expr;
 }
+
+export type Distribution = "normal" | "uniform" | "triangular" | "none";
 
 export interface UncertaintyB {
   value: string;
@@ -24,9 +30,7 @@ export interface DirectMeasurement extends BaseMeasurement {
 
 export interface CompositeMeasurement extends BaseMeasurement {
   type: "composite";
-  latex: string;
-  expr: string;
-  parsedExpr: MathNode?;
+  formula: Expr;
 }
 
 export type Measurement = DirectMeasurement | CompositeMeasurement;
