@@ -265,19 +265,20 @@ function CompositePanel({
   measurement,
   changeMeasurement,
 }: CompositePanelProps) {
-  const iptLatex = useRef(measurement.formula.latex);
-  const { latex, parsedExpr } = measurement.formula;
+  const [iptFormula, setIptFormula] = useState(measurement.formula);
+  const { latex, parsedExpr } = iptFormula;
   return (
-    <div className={`relative min-h-12 rounded-r-lg ${showRing(parsedExpr)}`}>
+    <div
+      className={`relative min-h-12 rounded-r-lg
+        ${showRing(!latex || parsedExpr)}`}
+    >
       <EditableMathField
         latex={latex}
-        onChange={(mathField) => {
-          iptLatex.current = mathField.latex();
-        }}
+        onChange={(mathField) => setIptFormula(parseLatex(mathField.latex()))}
         onBlur={() =>
           changeMeasurement({
             ...measurement,
-            formula: parseLatex(iptLatex.current),
+            formula: iptFormula,
           })
         }
         className="w-full px-2 py-1"
