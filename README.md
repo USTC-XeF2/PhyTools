@@ -1,54 +1,40 @@
-# React + TypeScript + Vite
+# PhyTools
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![code size](https://img.shields.io/github/languages/code-size/USTC-XeF2/PhyTools)
+![last commit](https://img.shields.io/github/last-commit/USTC-XeF2/PhyTools)
+![license](https://img.shields.io/github/license/USTC-XeF2/PhyTools)
 
-Currently, two official plugins are available:
+![vite](https://img.shields.io/badge/vite-v6.3.4-646CFF)
+![react](https://img.shields.io/badge/react-v19.1.0-blue)
+![tailwind](https://img.shields.io/badge/tailwind-v4.1.5-deepskyblue)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+实验数据分析网页工具
 
-## Expanding the ESLint configuration
+## 介绍
+本项目提供了多端界面适配、可离线使用的实验数据分析工具，支持**不确定度分析**等功能。您可以前往 [PhyTools](https://phytools.xef2.top) 体验本工具
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 贡献
+如果您有任何想法，欢迎在 [Issues](https://github.com/USTC-XeF2/PhyTools/issues) 中提出，或者 Fork 本项目并提交 Pull Request。本项目的本地部署流程如下：
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+### 项目部署流程
+1. 克隆本存储库到本地
+    ```bash
+    git clone https://github.com/USTC-XeF2/PhyTools.git
+    cd PhyTools
+    ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2. 使用 `npm` 安装依赖
+    ```bash
+    npm install
+    ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+3. 在本地运行项目预览
+    ```bash
+    npm run dev
+    ```
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+## TODO
+- [ ] 数据导入导出
+- [ ] 自动调整输出位数
+- [ ] 模板导出
+- [ ] 可视化拟合
