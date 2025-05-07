@@ -8,14 +8,16 @@ import {
   sum,
   unit,
 } from "mathjs";
-import { convertAsciiMathToLatex, convertLatexToAsciiMath } from "mathlive/ssr";
+import {
+  convertAsciiMathToLatex,
+  convertLatexToAsciiMath,
+  convertLatexToMathMl,
+} from "mathlive/ssr";
 
-import type { MathType, Unit } from "mathjs";
+import type { MathNode, MathType, Unit } from "mathjs";
 import type { Measurement, CompositeMeasurement } from "../types";
 
-const MATH_CONSTANTS = ["pi", "e", "sin", "cos", "ln"];
-
-export const parseExpr = (expr: string) => {
+const parseExpr = (expr: string) => {
   if (!expr) return null;
   try {
     return parse(expr);
@@ -61,27 +63,23 @@ export const parseUB = (value: string, unit: string) => {
   return parsedValue.value;
 };
 
+export const isVariable = (node: MathNode | null, latex: string) =>
+  node?.type === "SymbolNode" && !convertLatexToMathMl(latex).includes("<mo>");
+
 const changeToUnit = (value: MathType) => unit(value.toString());
 
-// 要处理循环引用的问题
 const getDependency = (
   measurement: CompositeMeasurement,
   measurements: Measurement[],
 ) => {
   const node = measurement.formula.parsedExpr;
-  if (!node) throw "未解析的表达式";
+  if (!node) throw measurement.formula.latex ? "表达式解析失败" : "表达式为空";
   return node
-    .filter((node) => node.type === "SymbolNode")
+    .filter((node) => isVariable(node, node.toTex()))
     .reduce((acc, node) => {
       const name = node.toString();
-      if (!MATH_CONSTANTS.includes(name)) {
-        const meas = measurements.find((m) => m.name.expr === name);
-        if (meas && meas !== measurement) {
-          acc.push(meas);
-        } else {
-          throw `未定义的测量量: ${name}`;
-        }
-      }
+      const meas = measurements.find((m) => m.name.expr === name);
+      if (meas && meas !== measurement) acc.push(meas);
       return acc;
     }, [] as Measurement[]);
 };
@@ -90,11 +88,11 @@ const getMeanValues = (
   dependency: Measurement[],
   measurements: Measurement[],
 ) => {
-  const meanValues: Record<string, Unit> = {};
+  const meanValues: Record<string, Unit | number> = {};
   for (const meas of dependency) {
     const value = mean(meas, measurements);
     if (value === null) return null;
-    meanValues[meas.name.expr] = value;
+    meanValues[meas.name.expr] = value.units.length ? value : value.value;
   }
   return meanValues;
 };
@@ -110,8 +108,12 @@ export const mean = (measurement: Measurement, measurements: Measurement[]) => {
   if (meanValues === null) return null;
   try {
     return changeToUnit(evaluate(measurement.formula.expr, meanValues));
-  } catch {
-    throw "表达式单位不一致";
+  } catch (e) {
+    const match = String(e).match(/Undefined symbol\s+(\w+)/);
+    if (match) {
+      throw `未定义的测量量：${match[1]}`;
+    }
+    throw e;
   }
 };
 

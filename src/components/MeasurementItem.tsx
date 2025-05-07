@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { mean, variance } from "mathjs";
 import { EditableMathField } from "react-mathquill";
 
-import { parseLatex, parseUnit, parseUB } from "../utils/math-core";
+import { parseLatex, parseUnit, parseUB, isVariable } from "../utils/math-core";
 
 import type {
   Distribution,
@@ -299,34 +299,32 @@ function MeasurementItem({
   changeMeasurement,
   deleteMeasurement,
 }: MeasurementItemProps) {
-  const { type, name } = measurement;
-  const nameValidity = useMemo(
-    () =>
-      !name.latex.startsWith("\\") &&
-      name.parsedExpr?.type === "SymbolNode" &&
-      !isNameExist(name.latex),
-    [name, isNameExist],
-  );
+  const { latex, parsedExpr } = measurement.name;
 
   return (
     <div className="container-box relative flex">
       <div className="idx-mark rounded-tl-md rounded-br-md px-1">
         {mIndex + 1}
       </div>
-      <div className={`rounded-l-lg ${showRing(nameValidity)}`}>
+      <div
+        className={`rounded-l-lg ${showRing(parsedExpr && !isNameExist(latex))}`}
+      >
         <EditableMathField
-          latex={name.latex}
-          onChange={(mathField) =>
+          latex={latex}
+          onChange={(mathField) => {
+            const expr = parseLatex(mathField.latex());
+            if (!isVariable(expr.parsedExpr, expr.latex))
+              expr.parsedExpr = null;
             changeMeasurement({
               ...measurement,
-              name: parseLatex(mathField.latex()),
-            })
-          }
-          className="w-14 px-1 py-1 text-center"
+              name: expr,
+            });
+          }}
+          className="w-16 px-1 py-1 text-center"
         />
       </div>
       <div className="flex flex-col w-full border-l-2 border-blue-200 ">
-        {type === "direct" ? (
+        {measurement.type === "direct" ? (
           <DirectPanel
             measurement={measurement}
             changeMeasurement={changeMeasurement}

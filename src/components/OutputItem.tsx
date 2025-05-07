@@ -49,7 +49,13 @@ function OutputItem({
       meanValue = mean(measurement, measurements);
       uncValue = uncertainty(measurement, measurements);
     } catch (e) {
-      return [null, null, "", String(e)];
+      let error = String(e);
+      if (error.includes("Units do not match")) {
+        error = "表达式单位不一致";
+      } else if (error.includes("Maximum call stack size exceeded")) {
+        error = "表达式存在循环引用";
+      }
+      return [null, null, "", error];
     }
     if (meanValue === null || uncValue === null) return [null, null, "", null];
     const mainUnit = output.displayUnit || meanValue.formatUnits();
@@ -130,7 +136,7 @@ function OutputItem({
           <option value="">选择变量</option>
           {measurements.map(
             (m) =>
-              m.name.expr && (
+              m.name.parsedExpr && (
                 <option key={m.name.expr} value={m.name.expr}>
                   {m.name.expr}
                 </option>
