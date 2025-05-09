@@ -14,7 +14,7 @@ export const createDirectMeasurement = (
   name: parseAM(amName),
   values: [],
   unit,
-  uncertaintyB: uB.concat(Array(2 - uB.length).fill("")).map((u) => ({
+  uncertaintyB: uB.map((u) => ({
     value: u,
     distribution: "normal",
   })),

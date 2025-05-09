@@ -5,10 +5,10 @@
     @apply border-2 border-blue-200 rounded-lg shadow hover:shadow-md;
   }
   .container-btn {
-    @apply w-full p-2 cursor-pointer text-center text-blue-400 hover:bg-blue-50;
+    @apply w-full p-2 select-none cursor-pointer text-center text-blue-400 hover:bg-blue-50;
   }
   .idx-mark, .del-mark {
-    @apply absolute z-30 text-blue-400 bg-blue-100 text-sm;
+    @apply absolute z-30 select-none text-blue-400 bg-blue-100 text-sm;
   }
   .del-mark {
     @apply cursor-pointer hover:text-red-500 hover:bg-red-100;

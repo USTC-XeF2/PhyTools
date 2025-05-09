@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { mean, uncertainty } from "../utils/math-core";
+import { parseUnit, mean, uncertainty } from "../utils/math-core";
 
 import type { Measurement, Output } from "../types";
 
@@ -31,6 +31,13 @@ function formatUncertainty(mean: number, uncertainty: number, n: number = 2) {
   return `${meanPart}(${uMain})${exponentPart}`;
 }
 
+const precisionList = [
+  [4, 2, 6],
+  [3, 2, 5],
+  [2, 1, 4],
+  [2, 1, 4],
+];
+
 function OutputItem({
   measurements,
   output,
@@ -40,7 +47,7 @@ function OutputItem({
   const measurement =
     measurements.find((m) => m.name.expr && m.name.expr === output.name) ||
     null;
-  const [precisions, setPrecisions] = useState<number[]>([4, 3, 2, 3]);
+  const [precisions, setPrecisions] = useState(precisionList.map((l) => l[0]));
 
   const [meanNum, uncNum, unitStr, error] = useMemo(() => {
     if (!measurement) return [null, null, "", null];
@@ -58,12 +65,15 @@ function OutputItem({
       return [null, null, "", error];
     }
     if (meanValue === null || uncValue === null) return [null, null, "", null];
-    const mainUnit = output.displayUnit || meanValue.formatUnits();
+    const mainUnit = (
+      (output.displayUnit && parseUnit(output.displayUnit)) ||
+      meanValue
+    ).formatUnits();
     try {
       return [
         meanValue.toNumber(mainUnit),
         uncValue.value === 0 ? null : uncValue.toNumber(mainUnit),
-        mainUnit ? ` ${mainUnit}` : "",
+        mainUnit.replace(/\s\/\s/g, "/"),
         null,
       ];
     } catch {
@@ -71,21 +81,28 @@ function OutputItem({
     }
   }, [measurement, measurements, output.displayUnit]);
 
+  const unitStrWithSup = unitStr
+    ? " " +
+      unitStr.replace(/([a-zA-Z]+)(\^([-\d]+))/g, (_, unit, __, exponent) => {
+        return `${unit}<sup>${exponent}</sup>`;
+      })
+    : "";
   const outputValues = [
     {
       label: "均值",
       getValue: (p: number) =>
-        meanNum !== null && meanNum.toPrecision(p) + unitStr,
+        meanNum !== null && meanNum.toPrecision(p) + unitStrWithSup,
     },
     {
       label: "不确定度",
       getValue: (p: number) =>
-        uncNum !== null && uncNum.toPrecision(p) + unitStr,
+        uncNum !== null && uncNum.toPrecision(p) + unitStrWithSup,
     },
     {
       label: "格式化结果",
       getValue: (p: number) =>
-        uncNum !== null && formatUncertainty(meanNum, uncNum, p) + unitStr,
+        uncNum !== null &&
+        formatUncertainty(meanNum, uncNum, p) + unitStrWithSup,
     },
     {
       label: "相对不确定度",
@@ -102,21 +119,31 @@ function OutputItem({
       const value = getValue(precisions[index]);
       return (
         <div key={index} className="output-item">
-          <div className="w-28 text-gray-500">{label}</div>
-          <div className="flex-1">{value || "-"}</div>
+          <div className="w-24 text-gray-500 text-sm">{label}</div>
+          <div
+            dangerouslySetInnerHTML={{ __html: value || "-" }}
+            className="flex-1"
+          />
           {value && (
-            <input
-              type="number"
-              min={2}
-              max={6}
-              value={precisions[index]}
-              onChange={(e) => {
-                const newPrecisions = [...precisions];
-                newPrecisions[index] = e.target.valueAsNumber;
-                setPrecisions(newPrecisions);
-              }}
-              className="w-10 px-1 text-center border border-gray-300 rounded-md outline-none"
-            />
+            <div className="flex items-center gap-1">
+              <input
+                type="range"
+                min={precisionList[index][1]}
+                max={precisionList[index][2]}
+                step={1}
+                value={precisions[index]}
+                onChange={(e) => {
+                  const newPrecisions = [...precisions];
+                  newPrecisions[index] = parseInt(e.target.value);
+                  setPrecisions(newPrecisions);
+                }}
+                className="w-14"
+                title="显示位数"
+              />
+              <span className="w-4 text-center text-xs text-gray-500">
+                {precisions[index]}
+              </span>
+            </div>
           )}
         </div>
       );
@@ -131,7 +158,7 @@ function OutputItem({
           onChange={(e) =>
             changeOutput({ ...output, name: e.target.value, displayUnit: "" })
           }
-          className="w-26 h-10 border-r border-gray-300 rounded-tl-lg outline-none px-2 py-1 bg-gray-100"
+          className="w-26 h-10 border-r border-gray-300 rounded-tl-lg outline-none px-2 py-1 bg-gray-50"
         >
           <option value="">选择变量</option>
           {measurements.map(
@@ -150,13 +177,15 @@ function OutputItem({
             onChange={(e) =>
               changeOutput({ ...output, displayUnit: e.target.value })
             }
-            placeholder={unitStr.trimStart()}
-            className="w-28 h-10 border-r border-gray-300 outline-none px-2 py-1 bg-gray-100"
+            placeholder={unitStr}
+            className="w-24 h-10 border-r border-gray-300 outline-none px-2 py-1 bg-gray-50 text-sm"
+            title="输出显示单位"
           />
         )}
       </div>
       {measurement && <div className="flex flex-col">{outputList}</div>}
       <button
+        type="button"
         onClick={onRemove}
         className="del-mark right-0 rounded-tr-md rounded-bl-md px-0.5"
       >

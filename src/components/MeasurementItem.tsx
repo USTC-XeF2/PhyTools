@@ -18,6 +18,7 @@ interface UncertaintyBInputProps {
   uncertainty: UncertaintyB;
   isValid: boolean;
   onChange: (value: string, distribution: Distribution) => void;
+  onDelete: () => void;
 }
 
 interface DirectPanelProps {
@@ -54,6 +55,7 @@ function UncertaintyBInput({
   uncertainty,
   isValid,
   onChange,
+  onDelete,
 }: UncertaintyBInputProps) {
   const { value, distribution } = uncertainty;
   const [isOpen, setIsOpen] = useState(false);
@@ -101,6 +103,12 @@ function UncertaintyBInput({
           setIsOpen(!!e.target.value);
         }}
         onClick={() => setIsOpen(!!value)}
+        onKeyDown={(e) => {
+          if (e.key === "Backspace" && e.currentTarget.value === "") {
+            e.preventDefault();
+            onDelete();
+          }
+        }}
         className={`plain-ipt w-20 ${showRing(isValid)}`}
       />
       {isOpen && content}
@@ -215,7 +223,7 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
       }}
       onBlur={updateValues}
       onKeyDown={(e) => handleKeyDown(index, e)}
-      className={`w-22 h-10 border-r border-b border-gray-300 outline-none px-2 py-1 text-center bg-gray-100 placeholder:text-sm
+      className={`w-22 h-10 border-r border-b border-gray-300 outline-none px-2 py-1 text-center bg-gray-50 placeholder:text-sm
         ${showRing(!isNaN(Number(value)))}`}
     />
   ));
@@ -254,8 +262,32 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
                 ),
               })
             }
+            onDelete={() =>
+              changeMeasurement({
+                ...measurement,
+                uncertaintyB: uncertaintyB.filter((_, i) => i !== idx),
+              })
+            }
           />
         ))}
+        {uncertaintyB.length < 2 && (
+          <button
+            type="button"
+            onClick={() =>
+              changeMeasurement({
+                ...measurement,
+                uncertaintyB: [
+                  ...uncertaintyB,
+                  { value: "", distribution: "normal" },
+                ],
+              })
+            }
+            className="w-5 h-5 rounded select-none cursor-pointer text-gray-500 bg-gray-100 hover:bg-gray-200"
+            title="添加B类不确定度"
+          >
+            +
+          </button>
+        )}
       </div>
     </>
   );
@@ -337,6 +369,7 @@ function MeasurementItem({
         )}
       </div>
       <button
+        type="button"
         onClick={deleteMeasurement}
         className="del-mark right-0 rounded-tr-md rounded-bl-md px-0.5"
       >
