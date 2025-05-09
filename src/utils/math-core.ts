@@ -64,7 +64,10 @@ export const parseUB = (value: string, unit: string) => {
 };
 
 export const isVariable = (node: MathNode | null, latex: string) =>
-  node?.type === "SymbolNode" && !convertLatexToMathMl(latex).includes("<mo>");
+  node?.type === "SymbolNode" &&
+  !convertLatexToMathMl(latex)
+    .replace("<mo>&#x2061;</mo>", "")
+    .includes("<mo>");
 
 const changeToUnit = (value: MathType) => unit(value.toString());
 
@@ -79,7 +82,7 @@ const getDependency = (
     .reduce((acc, node) => {
       const name = node.toString();
       const meas = measurements.find((m) => m.name.expr === name);
-      if (meas && meas !== measurement) acc.push(meas);
+      if (meas && meas !== measurement && !acc.includes(meas)) acc.push(meas);
       return acc;
     }, [] as Measurement[]);
 };
