@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
+import { unit } from "mathjs";
 
-import { parseUnit, mean, uncertainty } from "../utils/math-core";
+import { mean, uncertainty } from "../utils/math-core";
 
 import type { Measurement, Output } from "../types";
 
@@ -65,11 +66,11 @@ function OutputItem({
       return [null, null, "", error];
     }
     if (meanValue === null || uncValue === null) return [null, null, "", null];
-    const mainUnit = (
-      (output.displayUnit && parseUnit(output.displayUnit)) ||
-      meanValue
-    ).formatUnits();
     try {
+      const mainUnit = (
+        (output.displayUnit && unit(output.displayUnit)) ||
+        meanValue
+      ).formatUnits();
       return [
         meanValue.toNumber(mainUnit),
         uncValue.value === 0 ? null : uncValue.toNumber(mainUnit),
@@ -77,7 +78,7 @@ function OutputItem({
         null,
       ];
     } catch {
-      return [null, null, mainUnit, "输出单位指定错误"];
+      return [null, null, meanValue.formatUnits(), "输出单位指定错误"];
     }
   }, [measurement, measurements, output.displayUnit]);
 
@@ -118,7 +119,10 @@ function OutputItem({
     outputValues.map(({ label, getValue }, index) => {
       const value = getValue(precisions[index]);
       return (
-        <div key={index} className="output-item">
+        <div
+          key={index}
+          className={`output-item p-2 ${index % 2 ? "" : "bg-gray-100"}`}
+        >
           <div className="w-24 text-gray-500 text-sm">{label}</div>
           <div
             dangerouslySetInnerHTML={{ __html: value || "-" }}
@@ -183,7 +187,7 @@ function OutputItem({
           />
         )}
       </div>
-      {measurement && <div className="flex flex-col">{outputList}</div>}
+      {measurement && outputList}
       <button
         type="button"
         onClick={onRemove}

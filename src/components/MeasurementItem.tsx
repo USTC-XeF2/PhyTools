@@ -74,27 +74,8 @@ function UncertaintyBInput({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const content = (
-    <div className="absolute top-full z-50 left-0 mt-1 w-20 border border-gray-200 rounded divide-y divide-gray-200 shadow-lg text-gray-500 bg-white">
-      {Object.entries(distributions).map(([key, val]) => (
-        <div
-          key={key}
-          title={val[1]}
-          className={`p-1.5 cursor-pointer text-center text-sm
-            ${distribution === key ? "bg-blue-100" : "hover:bg-gray-100"}`}
-          onClick={() => {
-            onChange(value, key as Distribution);
-            setIsOpen(false);
-          }}
-        >
-          {val[0]}
-        </div>
-      ))}
-    </div>
-  );
-
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef}>
       <input
         type="text"
         value={value}
@@ -111,7 +92,25 @@ function UncertaintyBInput({
         }}
         className={`plain-ipt w-20 ${showRing(isValid)}`}
       />
-      {isOpen && content}
+      <div
+        className={`absolute z-50 w-20 mt-1 border border-gray-200 rounded divide-y divide-gray-200 shadow-lg text-gray-500 bg-white
+          ${isOpen ? "" : "hidden"}`}
+      >
+        {Object.entries(distributions).map(([key, val]) => (
+          <div
+            key={key}
+            title={val[1]}
+            className={`p-1.5 cursor-pointer text-center text-sm
+              ${distribution === key ? "bg-blue-100" : "hover:bg-gray-100"}`}
+            onClick={() => {
+              onChange(value, key as Distribution);
+              setIsOpen(false);
+            }}
+          >
+            {val[0]}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -170,16 +169,16 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
     index: number,
     e: React.KeyboardEvent<HTMLInputElement>,
   ) {
-    if (e.key === "Tab" && !e.shiftKey) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
       if (index === inputValues.length - 1) {
         setInputValues([...inputValues, ""]);
       }
-    } else if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      const nextInput = e.currentTarget.parentElement?.children[
-        index + 1
-      ] as HTMLInputElement;
-      nextInput?.select();
+      const parentElement = e.currentTarget.parentElement!;
+      setTimeout(
+        () => (parentElement.children[index + 1] as HTMLInputElement)?.select(),
+        0,
+      );
     } else if (e.key === "Backspace") {
       if (e.currentTarget.value === "" && index > 0) {
         e.preventDefault();
@@ -230,10 +229,8 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
 
   return (
     <>
-      <div className="flex flex-wrap border-b border-gray-300 pr-4">
-        {valuelist}
-      </div>
-      <div className="flex justify-between items-center h-10 px-2 py-1 text-sm">
+      <div className="flex flex-wrap pr-4">{valuelist}</div>
+      <div className="flex justify-between items-center h-10 px-2 py-1 bg-gray-100 text-sm">
         <div className="flex items-center gap-2">
           <label className="text-gray-500">单位</label>
           <input
@@ -247,7 +244,7 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
           共 {values.filter((v) => v).length} 项
         </span>
       </div>
-      <div className="flex items-center gap-2 h-10 border-t border-gray-300 px-2 py-1 text-sm">
+      <div className="flex items-center gap-2 h-10 px-2 py-1 text-sm">
         <label className="text-gray-500">B类不确定度</label>
         {uncertaintyB.map((uB, idx) => (
           <UncertaintyBInput
@@ -355,7 +352,7 @@ function MeasurementItem({
           className="w-16 px-1 py-1 text-center"
         />
       </div>
-      <div className="flex flex-col w-full border-l-2 border-blue-200 ">
+      <div className="flex flex-col w-full border-l-2 border-blue-200 divide-y divide-gray-300">
         {measurement.type === "direct" ? (
           <DirectPanel
             measurement={measurement}
