@@ -78,7 +78,7 @@ const getDependency = (
   const node = measurement.formula.parsedExpr;
   if (!node) throw measurement.formula.latex ? "表达式解析失败" : "表达式为空";
   return node
-    .filter((node) => isVariable(node, node.toTex()))
+    .filter((node) => isVariable(node, node.toString()))
     .reduce((acc, node) => {
       const name = node.toString();
       const meas = measurements.find((m) => m.name.expr === name);
