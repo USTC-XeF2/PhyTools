@@ -15,7 +15,7 @@ import {
 } from "mathlive/ssr";
 
 import type { MathNode, MathType, Unit } from "mathjs";
-import type { Measurement, CompositeMeasurement } from "../types";
+import type { Measurement, CompositeMeasurement, UTypes } from "../types";
 
 const parseExpr = (expr: string) => {
   if (!expr) return null;
@@ -130,22 +130,26 @@ const distributionCoefficient = {
 const getU2 = (
   measurement: Measurement,
   measurements: Measurement[],
+  displayUTypes: UTypes,
 ): Unit | null => {
   if (measurement.type === "direct") {
-    if (measurement.u2 === null) return null;
-    const sumUB2 = sum(
-      measurement.uncertaintyB
-        .map(({ value: v, distribution: d }) => {
-          const parsedValue = parseUB(v, measurement.unit);
-          if (!parsedValue) return 0;
-          return parsedValue * distributionCoefficient[d];
-        })
-        .map((u) => u ** 2),
-    );
-    return multiply(
-      measurement.u2 + sumUB2,
-      pow(unit(measurement.unit), 2),
-    ) as Unit;
+    let sumU2 = 0;
+    if (displayUTypes.typeA) {
+      if (measurement.u2 === null) return null;
+      sumU2 += measurement.u2;
+    }
+    if (displayUTypes.typeB) {
+      sumU2 += sum(
+        measurement.uncertaintyB
+          .map(({ value: v, distribution: d }) => {
+            const parsedValue = parseUB(v, measurement.unit);
+            if (!parsedValue) return 0;
+            return parsedValue * distributionCoefficient[d];
+          })
+          .map((u) => u ** 2),
+      );
+    }
+    return multiply(sumU2, pow(unit(measurement.unit), 2)) as Unit;
   }
   const dependency = getDependency(measurement, measurements);
   const meanValues = getMeanValues(dependency, measurements);
@@ -154,7 +158,7 @@ const getU2 = (
     dependency.map(
       (meas) =>
         multiply(
-          getU2(meas, measurements) as Unit, // 由于mean存在，u2i不可能为null
+          getU2(meas, measurements, displayUTypes) as Unit,
           pow(
             derivative(measurement.formula.expr, meas.name.expr).evaluate(
               meanValues,
@@ -169,7 +173,8 @@ const getU2 = (
 export const uncertainty = (
   measurement: Measurement,
   measurements: Measurement[],
+  displayUTypes: UTypes,
 ) => {
-  const u2 = getU2(measurement, measurements);
+  const u2 = getU2(measurement, measurements, displayUTypes);
   return u2 !== null ? changeToUnit(sqrt(u2)) : null;
 };

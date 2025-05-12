@@ -41,3 +41,8 @@ export interface Output {
   name: string;
   displayUnit: string?;
 }
+
+export interface UTypes {
+  typeA: boolean;
+  typeB: boolean;
+}

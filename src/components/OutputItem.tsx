@@ -3,7 +3,7 @@ import { unit } from "mathjs";
 
 import { mean, uncertainty } from "../utils/math-core";
 
-import type { Measurement, Output } from "../types";
+import type { Measurement, Output, UTypes } from "../types";
 
 interface OutputItemProps {
   measurements: Measurement[];
@@ -32,6 +32,11 @@ function formatUncertainty(mean: number, uncertainty: number, n: number = 2) {
   return `${meanPart}(${uMain})${exponentPart}`;
 }
 
+const displayUTypeList = [
+  { type: "typeA", label: "A类" },
+  { type: "typeB", label: "B类" },
+];
+
 const precisionList = [
   [4, 2, 6],
   [3, 2, 5],
@@ -49,13 +54,17 @@ function OutputItem({
     measurements.find((m) => m.name.expr && m.name.expr === output.name) ||
     null;
   const [precisions, setPrecisions] = useState(precisionList.map((l) => l[0]));
+  const [displayUTypes, setDisplayUTypes] = useState<UTypes>({
+    typeA: true,
+    typeB: true,
+  });
 
   const [meanNum, uncNum, unitStr, error] = useMemo(() => {
     if (!measurement) return [null, null, "", null];
     let meanValue, uncValue;
     try {
       meanValue = mean(measurement, measurements);
-      uncValue = uncertainty(measurement, measurements);
+      uncValue = uncertainty(measurement, measurements, displayUTypes);
     } catch (e) {
       let error = String(e);
       if (error.includes("Units do not match")) {
@@ -80,7 +89,7 @@ function OutputItem({
     } catch {
       return [null, null, meanValue.formatUnits(), "输出单位指定错误"];
     }
-  }, [measurement, measurements, output.displayUnit]);
+  }, [measurement, measurements, displayUTypes, output.displayUnit]);
 
   const unitStrWithSup = unitStr
     ? " " +
@@ -107,9 +116,13 @@ function OutputItem({
     },
     {
       label: "相对不确定度",
-      getValue: (p: number) =>
-        uncNum !== null &&
-        ((uncNum / Math.abs(meanNum)) * 100).toPrecision(p) + "%",
+      getValue: (p: number) => {
+        if (uncNum === null) return false;
+        const relativeU = uncNum / Math.abs(meanNum);
+        return relativeU < 1
+          ? (relativeU * 100).toPrecision(p) + "%"
+          : relativeU.toPrecision(p);
+      },
     },
   ];
 
@@ -168,7 +181,7 @@ function OutputItem({
           {measurements.map(
             (m) =>
               m.name.parsedExpr && (
-                <option key={m.name.expr} value={m.name.expr}>
+                <option key={m.id} value={m.name.expr}>
                   {m.name.expr}
                 </option>
               ),
@@ -185,6 +198,26 @@ function OutputItem({
             className="w-24 h-10 border-r border-gray-300 outline-none px-2 py-1 bg-gray-50 text-sm"
             title="输出显示单位"
           />
+        )}
+        {measurement && (
+          <div className="flex items-center ml-auto pr-6 space-x-2 text-gray-500 text-sm">
+            {displayUTypeList.map(({ type, label }) => (
+              <label key={type} className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={displayUTypes[type as keyof UTypes]}
+                  onChange={() =>
+                    setDisplayUTypes((prev) => ({
+                      ...prev,
+                      [type]: !prev[type as keyof UTypes],
+                    }))
+                  }
+                  className="mr-1 cursor-pointer"
+                />
+                {label}
+              </label>
+            ))}
+          </div>
         )}
       </div>
       {measurement && outputList}
