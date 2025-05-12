@@ -51,6 +51,14 @@ const distributions = {
   none: ["无", "不对输入值进行处理"],
 };
 
+const nameUnitMap: Record<string, string> = {
+  t: "s",
+  v: "m/s",
+  m: "g",
+  F: "N",
+  U: "V",
+};
+
 function UncertaintyBInput({
   uncertainty,
   isValid,
@@ -121,6 +129,8 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
     values.length ? values.map(String) : [""],
   );
   const [inputUnit, setInputUnit] = useState(unit);
+
+  useEffect(() => setInputUnit(unit), [unit]);
 
   const uBValid = useMemo(
     () =>
@@ -342,8 +352,12 @@ function MeasurementItem({
           latex={latex}
           onChange={(mathField) => {
             const expr = parseLatex(mathField.latex());
-            if (!isVariable(expr.parsedExpr, expr.latex))
+            if (!isVariable(expr.parsedExpr, expr.latex)) {
               expr.parsedExpr = null;
+            } else if (measurement.type === "direct" && !measurement.unit) {
+              const name = expr.latex.trim()[0];
+              if (name in nameUnitMap) measurement.unit = nameUnitMap[name];
+            }
             changeMeasurement({
               ...measurement,
               name: expr,
