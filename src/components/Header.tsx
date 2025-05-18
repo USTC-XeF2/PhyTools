@@ -18,7 +18,7 @@ function Header({ getTemplate }: HeaderProps) {
 
   return (
     <>
-      <div className="fixed t-0 flex items-center lg:justify-center w-full h-[3rem] z-99 select-none text-white bg-gray-800">
+      <div className="fixed t-0 flex items-center lg:justify-center w-full h-12 z-99 select-none text-white bg-gray-800">
         <h1 className="px-5 text-2xl font-bold">PhyTools</h1>
         <div className="absolute flex items-center right-2">
           <button

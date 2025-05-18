@@ -59,12 +59,13 @@ function OutputItem({
     typeB: true,
   });
 
-  const [meanNum, uncNum, unitStr, error] = useMemo(() => {
-    if (!measurement) return [null, null, "", null];
-    let meanValue, uncValue;
+  const calcRes = useMemo(() => {
+    if (!measurement) return null;
     try {
-      meanValue = mean(measurement, measurements);
-      uncValue = uncertainty(measurement, measurements, displayUTypes);
+      return {
+        meanValue: mean(measurement, measurements),
+        uncValue: uncertainty(measurement, measurements, displayUTypes),
+      };
     } catch (e) {
       let error = String(e);
       if (error.includes("Units do not match")) {
@@ -72,8 +73,14 @@ function OutputItem({
       } else if (error.includes("Maximum call stack size exceeded")) {
         error = "表达式存在循环引用";
       }
-      return [null, null, "", error];
+      return error;
     }
+  }, [measurement, measurements, displayUTypes]);
+
+  const [meanNum, uncNum, unitStr, error] = useMemo(() => {
+    if (!calcRes) return [null, null, "", null];
+    if (typeof calcRes === "string") return [null, null, "", calcRes];
+    const { meanValue, uncValue } = calcRes;
     if (meanValue === null || uncValue === null) return [null, null, "", null];
     try {
       const mainUnit = (
@@ -89,7 +96,7 @@ function OutputItem({
     } catch {
       return [null, null, meanValue.formatUnits(), "输出单位指定错误"];
     }
-  }, [measurement, measurements, displayUTypes, output.displayUnit]);
+  }, [calcRes, output.displayUnit]);
 
   const unitStrWithSup = unitStr
     ? " " +

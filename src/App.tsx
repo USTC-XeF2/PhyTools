@@ -31,19 +31,18 @@ function App() {
   return (
     <>
       <Header
-        getTemplate={() => {
-          const searchString = exportAsUrlSearch(measurements, outputs);
-          return `${window.location.origin}${window.location.pathname}?${searchString}`;
-        }}
+        getTemplate={() =>
+          `${window.location.origin}${window.location.pathname}?${exportAsUrlSearch(measurements, outputs)}`
+        }
       />
-      <div className="flex lg:flex-row flex-col justify-center pt-12 lg:divide-x-2 max-lg:divide-y-3 divide-blue-300">
-        <div className="flex-auto basis-2/5 lg:h-[calc(100vh-3rem)] overflow-y-auto">
+      <div className="flex max-lg:flex-col h-screen pt-12 lg:divide-x-2 max-lg:divide-y-3 divide-blue-300">
+        <div className="lg:basis-2/5 lg:overflow-y-auto">
           <MeasurementList
             measurements={measurements}
             setMeasurements={setMeasurements}
           />
         </div>
-        <div className="flex-auto basis-3/5 lg:h-[calc(100vh-3rem)] overflow-y-auto">
+        <div className="lg:basis-3/5 lg:overflow-y-auto">
           <OutputList
             measurements={measurements}
             outputs={outputs}

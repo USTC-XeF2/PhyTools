@@ -52,11 +52,14 @@ const distributions = {
 };
 
 const nameUnitMap: Record<string, string> = {
+  l: "cm",
+  L: "cm",
   t: "s",
-  v: "m/s",
   m: "g",
+  M: "g",
   F: "N",
   U: "V",
+  I: "A",
 };
 
 function UncertaintyBInput({
