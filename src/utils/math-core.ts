@@ -38,7 +38,10 @@ export const parseAM = (asciiMath: string, latex?: string) => {
 };
 
 export const parseLatex = (latex: string) =>
-  parseAM(convertLatexToAsciiMath(latex), latex);
+  parseAM(
+    convertLatexToAsciiMath(latex.replace(/\\(\w)/g, "\\ \\$1")).trim(),
+    latex,
+  );
 
 export const parseUnit = (s: string) => {
   try {
@@ -78,7 +81,11 @@ const getDependency = (
   const node = measurement.formula.parsedExpr;
   if (!node) throw measurement.formula.latex ? "表达式解析失败" : "表达式为空";
   return node
-    .filter((node) => isVariable(node, node.toString()))
+    .filter((node) => {
+      let name = node.toString();
+      if (name.split("_")[0].length > 1) name = "\\" + name;
+      return isVariable(node, name);
+    })
     .reduce((acc, node) => {
       const name = node.toString();
       const meas = measurements.find((m) => m.name.expr === name);

@@ -62,6 +62,8 @@ const nameUnitMap: Record<string, string> = {
   I: "A",
 };
 
+const autoCommands = "alpha beta eta gamma lambda mu phi pi rho theta";
+
 function UncertaintyBInput({
   uncertainty,
   isValid,
@@ -132,6 +134,7 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
     values.length ? values.map(String) : [""],
   );
   const [inputUnit, setInputUnit] = useState(unit);
+  const unitValid = useRef(true);
 
   useEffect(() => setInputUnit(unit), [unit]);
 
@@ -212,8 +215,9 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
 
   function handleUnitChange(value: string) {
     setInputUnit(value);
-    const newUnit = parseUnit(value)?.value === null ? value : "";
-    if (newUnit !== unit) changeMeasurement({ ...measurement, unit: newUnit });
+    unitValid.current = parseUnit(value)?.value === null;
+    if (unitValid.current && value !== unit)
+      changeMeasurement({ ...measurement, unit: value });
   }
 
   const valuelist = inputValues.map((value, index) => (
@@ -250,7 +254,7 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
             type="text"
             value={inputUnit}
             onChange={(e) => handleUnitChange(e.target.value)}
-            className={`plain-ipt w-24 ${showRing(unit || !inputUnit)}`}
+            className={`plain-ipt w-24 ${showRing(unitValid.current)}`}
           />
         </div>
         <span className="text-gray-500">
@@ -316,6 +320,10 @@ function CompositePanel({
     >
       <EditableMathField
         latex={latex}
+        config={{
+          supSubsRequireOperand: true,
+          autoCommands,
+        }}
         onChange={(mathField) => setIptFormula(parseLatex(mathField.latex()))}
         onBlur={() =>
           changeMeasurement({
@@ -353,6 +361,7 @@ function MeasurementItem({
       >
         <EditableMathField
           latex={latex}
+          config={{ autoCommands }}
           onChange={(mathField) => {
             const expr = parseLatex(mathField.latex());
             if (!isVariable(expr.parsedExpr, expr.latex)) {
