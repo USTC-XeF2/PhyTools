@@ -28,6 +28,8 @@ const parseExpr = (expr: string) => {
 
 export const parseAM = (asciiMath: string, latex?: string) => {
   const expr = asciiMath
+    .replace(/\s*([()])\s*/g, (_, p) => p)
+    .replace(/\)(\w)/g, (_, p) => `)*${p}`)
     .replace(/_\((\w+)\)/g, (_, p) => `_${p}`)
     .replace(/([a-zA-Z])\^([a-zA-Z])/g, (_, a, b) => `${a}^(${b})`);
   return {
@@ -134,6 +136,8 @@ const distributionCoefficient = {
   none: 1,
 };
 
+const derivativeCache: Record<string, MathNode> = {};
+
 const getU2 = (
   measurement: Measurement,
   measurements: Measurement[],
@@ -162,18 +166,18 @@ const getU2 = (
   const meanValues = getMeanValues(dependency, measurements);
   if (meanValues === null) return null;
   return sum(
-    dependency.map(
-      (meas) =>
-        multiply(
+    dependency
+      .map((meas) => {
+        const node = measurement.formula.parsedExpr!;
+        const cacheKey = `${node.toString()}::${meas.name.expr}`;
+        if (!derivativeCache[cacheKey])
+          derivativeCache[cacheKey] = derivative(node, meas.name.expr);
+        return multiply(
           getU2(meas, measurements, displayUTypes) as Unit,
-          pow(
-            derivative(measurement.formula.expr, meas.name.expr).evaluate(
-              meanValues,
-            ),
-            2,
-          ),
-        ) as Unit,
-    ),
+          pow(derivativeCache[cacheKey].evaluate(meanValues), 2),
+        ) as Unit;
+      })
+      .filter((u) => u.value !== 0),
   );
 };
 

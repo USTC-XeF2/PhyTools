@@ -58,7 +58,7 @@ export const exportAsUrlSearch = (
     const { name, displayUnit } = output;
     if (!name) return;
     const amName = convertLatexToAsciiMath(name);
-    params.append("o", ["u", amName, displayUnit || ""].join(","));
+    params.append("o", ["u", amName, displayUnit].filter(Boolean).join(","));
   });
   return params.toString();
 };

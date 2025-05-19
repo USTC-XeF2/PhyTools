@@ -325,12 +325,13 @@ function CompositePanel({
           autoCommands,
         }}
         onChange={(mathField) => setIptFormula(parseLatex(mathField.latex()))}
-        onBlur={() =>
-          changeMeasurement({
-            ...measurement,
-            formula: iptFormula,
-          })
-        }
+        onBlur={() => {
+          if (measurement.formula.latex !== iptFormula.latex)
+            changeMeasurement({
+              ...measurement,
+              formula: iptFormula,
+            });
+        }}
         className="w-full px-2 py-1"
       />
       {!latex && (
