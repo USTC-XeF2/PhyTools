@@ -1,13 +1,4 @@
-import {
-  derivative,
-  evaluate,
-  multiply,
-  parse,
-  pow,
-  sqrt,
-  sum,
-  unit,
-} from "mathjs";
+import { derivative, multiply, parse, pow, sqrt, sum, unit } from "mathjs";
 import {
   convertAsciiMathToLatex,
   convertLatexToAsciiMath,
@@ -16,6 +7,8 @@ import {
 
 import type { MathNode, MathType, Unit } from "mathjs";
 import type { Measurement, CompositeMeasurement, UTypes } from "../types";
+
+type Values = Record<string, Unit | number>;
 
 const parseExpr = (expr: string) => {
   if (!expr) return null;
@@ -96,30 +89,35 @@ const getDependency = (
     }, [] as Measurement[]);
 };
 
-const getMeanValues = (
+const getValues = (
   dependency: Measurement[],
   measurements: Measurement[],
+  constants: Values,
 ) => {
-  const meanValues: Record<string, Unit | number> = {};
+  const meanValues: Values = {};
   for (const meas of dependency) {
-    const value = mean(meas, measurements);
+    const value = mean(meas, measurements, constants);
     if (value === null) return null;
     meanValues[meas.name.expr] = value.units.length ? value : value.value;
   }
-  return meanValues;
+  return { ...constants, ...meanValues };
 };
 
-export const mean = (measurement: Measurement, measurements: Measurement[]) => {
+export const mean = (
+  measurement: Measurement,
+  measurements: Measurement[],
+  constants: Values,
+) => {
   if (measurement.type === "direct") {
     return measurement.mean !== null
       ? unit(`${measurement.mean} ${measurement.unit}`)
       : null;
   }
   const dependency = getDependency(measurement, measurements);
-  const meanValues = getMeanValues(dependency, measurements);
-  if (meanValues === null) return null;
+  const values = getValues(dependency, measurements, constants);
+  if (values === null) return null;
   try {
-    return changeToUnit(evaluate(measurement.formula.expr, meanValues));
+    return changeToUnit(measurement.formula.parsedExpr!.evaluate(values));
   } catch (e) {
     const match = String(e).match(/Undefined symbol\s+(\w+)/);
     if (match) {
@@ -141,6 +139,7 @@ const derivativeCache: Record<string, MathNode> = {};
 const getU2 = (
   measurement: Measurement,
   measurements: Measurement[],
+  constants: Values,
   displayUTypes: UTypes,
 ): Unit | null => {
   if (measurement.type === "direct") {
@@ -163,8 +162,8 @@ const getU2 = (
     return multiply(sumU2, pow(unit(measurement.unit), 2)) as Unit;
   }
   const dependency = getDependency(measurement, measurements);
-  const meanValues = getMeanValues(dependency, measurements);
-  if (meanValues === null) return null;
+  const values = getValues(dependency, measurements, constants);
+  if (values === null) return null;
   return sum(
     dependency
       .map((meas) => {
@@ -173,8 +172,8 @@ const getU2 = (
         if (!derivativeCache[cacheKey])
           derivativeCache[cacheKey] = derivative(node, meas.name.expr);
         return multiply(
-          getU2(meas, measurements, displayUTypes) as Unit,
-          pow(derivativeCache[cacheKey].evaluate(meanValues), 2),
+          getU2(meas, measurements, constants, displayUTypes) as Unit,
+          pow(derivativeCache[cacheKey].evaluate(values), 2),
         ) as Unit;
       })
       .filter((u) => u.value !== 0),
@@ -184,8 +183,9 @@ const getU2 = (
 export const uncertainty = (
   measurement: Measurement,
   measurements: Measurement[],
+  constants: Values,
   displayUTypes: UTypes,
 ) => {
-  const u2 = getU2(measurement, measurements, displayUTypes);
+  const u2 = getU2(measurement, measurements, constants, displayUTypes);
   return u2 !== null ? changeToUnit(sqrt(u2)) : null;
 };

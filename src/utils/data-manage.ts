@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from "react";
 import { convertLatexToAsciiMath } from "mathlive/ssr";
 
 import {
@@ -7,6 +8,51 @@ import {
 } from "./create-data";
 
 import type { Measurement, Output } from "../types";
+
+export function useLocalStorage<T>(
+  key: string,
+  initialValue: T,
+): [T, (value: T) => void] {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? { ...initialValue, ...JSON.parse(item) } : initialValue;
+    } catch (e) {
+      console.error(e);
+      return initialValue;
+    }
+  });
+
+  const setValue = useCallback(
+    (value: T) => {
+      try {
+        setStoredValue(value);
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (e) {
+        console.error(e);
+      }
+    },
+    [key],
+  );
+
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === key && event.newValue !== null) {
+        try {
+          setStoredValue(JSON.parse(event.newValue));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [key]);
+
+  return [storedValue, setValue];
+}
 
 export const parseUrlSearch = (search: string) => {
   const queryParams = new URLSearchParams(search);

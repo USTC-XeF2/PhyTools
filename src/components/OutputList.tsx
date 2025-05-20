@@ -1,21 +1,20 @@
+import { useGlobalContext } from "../utils/context";
 import { createOutput } from "../utils/create-data";
 import OutputItem from "./OutputItem";
 
-import type { Measurement, Output } from "../types";
+import type { Output } from "../types";
 
 interface OutputListProps {
-  measurements: Measurement[];
-  outputs: Output[];
   setOutputs: (outputs: Output[]) => void;
 }
 
-function OutputList({ measurements, outputs, setOutputs }: OutputListProps) {
+function OutputList({ setOutputs }: OutputListProps) {
+  const { outputs } = useGlobalContext();
   return (
     <div className="flex flex-col gap-4 p-4">
       {outputs.map((output, index) => (
         <OutputItem
           key={output.id}
-          measurements={measurements}
           output={output}
           changeOutput={(newOutput) => {
             setOutputs(outputs.map((o, i) => (i === index ? newOutput : o)));

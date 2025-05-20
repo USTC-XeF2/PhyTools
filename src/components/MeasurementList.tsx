@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 
+import { useGlobalContext } from "../utils/context";
 import {
   createDirectMeasurement,
   createCompositeMeasurement,
@@ -9,14 +10,11 @@ import MeasurementItem from "./MeasurementItem";
 import type { Measurement } from "../types";
 
 interface MeasurementListProps {
-  measurements: Measurement[];
   setMeasurements: (measurements: Measurement[]) => void;
 }
 
-function MeasurementList({
-  measurements,
-  setMeasurements,
-}: MeasurementListProps) {
+function MeasurementList({ setMeasurements }: MeasurementListProps) {
+  const { measurements } = useGlobalContext();
   const isNameExist = useCallback(
     (latex: string) =>
       measurements.filter((m) => m.name.latex === latex).length > 1,

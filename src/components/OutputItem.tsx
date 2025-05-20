@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { unit } from "mathjs";
 
+import { useGlobalContext } from "../utils/context";
 import { mean, uncertainty } from "../utils/math-core";
 
-import type { Measurement, Output, UTypes } from "../types";
+import type { Output, UTypes } from "../types";
 
 interface OutputItemProps {
-  measurements: Measurement[];
   output: Output;
   changeOutput: (output: Output) => void;
   onRemove: () => void;
@@ -44,12 +44,8 @@ const precisionList = [
   [2, 1, 4],
 ];
 
-function OutputItem({
-  measurements,
-  output,
-  changeOutput,
-  onRemove,
-}: OutputItemProps) {
+function OutputItem({ output, changeOutput, onRemove }: OutputItemProps) {
+  const { settings, measurements } = useGlobalContext();
   const measurement =
     measurements.find((m) => m.name.expr && m.name.expr === output.name) ||
     null;
@@ -59,12 +55,24 @@ function OutputItem({
     typeB: true,
   });
 
+  const constants = useMemo(
+    () => ({
+      g: unit(settings.gravity, "m/s^2"),
+    }),
+    [settings],
+  );
+
   const calcRes = useMemo(() => {
     if (!measurement) return null;
     try {
       return {
-        meanValue: mean(measurement, measurements),
-        uncValue: uncertainty(measurement, measurements, displayUTypes),
+        meanValue: mean(measurement, measurements, constants),
+        uncValue: uncertainty(
+          measurement,
+          measurements,
+          constants,
+          displayUTypes,
+        ),
       };
     } catch (e) {
       let error = String(e);
@@ -75,7 +83,7 @@ function OutputItem({
       }
       return error;
     }
-  }, [measurement, measurements, displayUTypes]);
+  }, [measurement, measurements, constants, displayUTypes]);
 
   const [meanNum, uncNum, unitStr, error] = useMemo(() => {
     if (!calcRes) return [null, null, "", null];

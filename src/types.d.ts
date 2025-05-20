@@ -1,5 +1,10 @@
 import type { MathNode } from "mathjs";
 
+export interface Settings {
+  firstLoad: boolean;
+  gravity: number;
+}
+
 interface Expr {
   latex: string;
   expr: string;
