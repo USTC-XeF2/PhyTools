@@ -18,6 +18,7 @@ export const createDirectMeasurement = (
     value: u,
     distribution: "normal",
   })),
+  minDigits: 0,
   mean: null,
   u2: null,
 });

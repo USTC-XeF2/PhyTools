@@ -43,12 +43,12 @@ function SettingMenu({ close, setSettings }: SettingMenuProps) {
   };
 
   return (
-    <div className="absolute top-10 right-0 w-80 z-100 border border-gray-200 rounded-lg shadow-lg text-black bg-white">
-      <div className="relative flex justify-between items-center px-3 py-2 bg-gray-100 rounded-t-lg">
-        <div className="text-gray-500">设置</div>
+    <div className="absolute top-10 right-0 w-66 z-100 border border-gray-200 rounded-lg shadow-lg text-black bg-white">
+      <div className="relative flex justify-between items-center rounded-t-lg px-3 py-2 text-gray-500 bg-gray-100">
+        设置
         <button
           onClick={close}
-          className="cursor-pointer text-gray-500 hover:text-gray-700 focus:outline-none"
+          className="cursor-pointer focus:outline-none hover:text-red-500"
         >
           <svg
             className="w-4 h-4"
@@ -66,13 +66,30 @@ function SettingMenu({ close, setSettings }: SettingMenuProps) {
         </button>
       </div>
 
-      <div className="flex items-center gap-2 p-3">
-        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-          g (m/s²)
+      <div className="flex items-center justify-between p-3 text-sm">
+        <label className="text-gray-500">自动调整位数</label>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={settings.autoAdjustDigits || false}
+            onChange={(e) =>
+              setSettings({
+                ...settings,
+                autoAdjustDigits: e.target.checked,
+              })
+            }
+            className="sr-only peer"
+          />
+          <div className="w-9 h-5 rounded-full bg-gray-200 peer-checked:bg-blue-500"></div>
+          <div className="absolute w-4 h-4 left-0.5 peer-checked:left-4.5 rounded-full transition-all bg-white"></div>
         </label>
+      </div>
+      <div className="flex items-center gap-2 p-3 text-sm">
+        <label className="text-gray-500">重力加速度</label>
         <input
           type="text"
           value={settings.gravity}
+          maxLength={7}
           onChange={(e) => {
             const g = parseFloat(e.target.value);
             if (g > 0)
@@ -81,12 +98,13 @@ function SettingMenu({ close, setSettings }: SettingMenuProps) {
                 gravity: g,
               });
           }}
-          className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-400 focus:outline-none"
+          className="flex-1 w-0 border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-400 focus:outline-none"
         />
+        m/s²
         <button
           onClick={handleSetGravity}
           disabled={!navigator.geolocation || isLoadingLocation}
-          className={`p-1.5 rounded transition-colors ${
+          className={`ml-2 rounded p-1.5 transition-colors ${
             navigator.geolocation && !isLoadingLocation
               ? "cursor-pointer text-blue-600 bg-blue-100 hover:bg-blue-200"
               : "cursor-not-allowed text-gray-500 bg-gray-200"

@@ -89,6 +89,18 @@ const getDependency = (
     }, [] as Measurement[]);
 };
 
+export const getMinDigits = (
+  measurement: Measurement,
+  measurements: Measurement[],
+): number =>
+  measurement.type === "direct"
+    ? measurement.minDigits
+    : Math.min(
+        ...getDependency(measurement, measurements).map((meas) =>
+          getMinDigits(meas, measurements),
+        ),
+      );
+
 const getValues = (
   dependency: Measurement[],
   measurements: Measurement[],

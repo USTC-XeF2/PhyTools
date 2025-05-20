@@ -4,6 +4,7 @@ import type { Settings, Measurement, Output } from "../types";
 
 export const defaultSettings: Settings = {
   firstLoad: true,
+  autoAdjustDigits: true,
   gravity: 9.8,
 };
 

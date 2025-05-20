@@ -129,7 +129,7 @@ function UncertaintyBInput({
 }
 
 function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
-  const { values, unit, uncertaintyB } = measurement;
+  const { values, unit, uncertaintyB, minDigits } = measurement;
   const [inputValues, setInputValues] = useState(
     values.length ? values.map(String) : [""],
   );
@@ -162,21 +162,27 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
   }
 
   function updateValues() {
-    const filteredValues = inputValues
-      .map((v) => (v === "" || isNaN(Number(v)) ? null : Number(v)))
-      .filter((v) => v !== null);
+    const filteredValues = inputValues.filter(
+      (v) => v !== "" && !isNaN(Number(v)),
+    );
+    const newValues = filteredValues.map((v) => Number(v));
+    const newMinDigits = Math.min(
+      ...filteredValues.map((v) => v.split("e")[0].replace(".", "").length),
+    );
     if (
-      values.length === filteredValues.length &&
-      values.every((v, i) => v === filteredValues[i])
+      values.length === newValues.length &&
+      values.every((v, i) => v === newValues[i]) &&
+      minDigits === newMinDigits
     ) {
       return;
     }
     changeMeasurement({
       ...measurement,
-      values: filteredValues,
-      mean: filteredValues.length ? mean(filteredValues) : null,
-      u2: filteredValues.length
-        ? (variance(...filteredValues) as number) / filteredValues.length
+      values: newValues,
+      minDigits: newMinDigits,
+      mean: newValues.length ? mean(newValues) : null,
+      u2: newValues.length
+        ? (variance(...newValues) as number) / newValues.length
         : null,
     });
   }

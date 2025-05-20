@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { unit } from "mathjs";
 
 import { useGlobalContext } from "../utils/context";
-import { mean, uncertainty } from "../utils/math-core";
+import { getMinDigits, mean, uncertainty } from "../utils/math-core";
 
 import type { Output, UTypes } from "../types";
 
@@ -12,19 +12,20 @@ interface OutputItemProps {
   onRemove: () => void;
 }
 
-function formatUncertainty(mean: number, uncertainty: number, n: number = 2) {
-  const meanExp = mean === 0 ? 0 : Math.floor(Math.log10(Math.abs(mean)));
-  const uExp = Math.floor(Math.log10(uncertainty));
-  if (meanExp < uExp) return mean.toPrecision(n);
+const getExp = (v: number) =>
+  v === 0 ? 0 : Math.floor(Math.log10(Math.abs(v)));
+
+function formatUncertainty(mean: number, uncertainty: number, n: number) {
+  const meanExp = getExp(mean);
+  const uExp = getExp(uncertainty);
+  if (meanExp <= uExp) return mean.toPrecision(n);
 
   const coeffExp = n - uExp - 1;
   let meanPart,
     exponentPart = "";
   if (meanExp >= 3 || meanExp <= -3) {
-    meanPart = (mean / 10 ** meanExp)
-      .toFixed(meanExp + coeffExp)
-      .replace(/\.?0+$/, "");
-    exponentPart = `e${meanExp}`;
+    meanPart = (mean / 10 ** meanExp).toFixed(meanExp + coeffExp);
+    exponentPart = `×10<sup>${meanExp}</sup>`;
   } else {
     meanPart = mean.toFixed(Math.max(coeffExp, 0));
   }
@@ -38,10 +39,10 @@ const displayUTypeList = [
 ];
 
 const precisionList = [
-  [4, 2, 6],
-  [3, 2, 5],
-  [2, 1, 4],
-  [2, 1, 4],
+  [4, 1, 6],
+  [3, 1, 4],
+  [2, 1, 3],
+  [3, 1, 4],
 ];
 
 function OutputItem({ output, changeOutput, onRemove }: OutputItemProps) {
@@ -60,6 +61,12 @@ function OutputItem({ output, changeOutput, onRemove }: OutputItemProps) {
       g: unit(settings.gravity, "m/s^2"),
     }),
     [settings],
+  );
+
+  const minDigits = useMemo(
+    () =>
+      measurement ? Math.min(10, getMinDigits(measurement, measurements)) : 0,
+    [measurement, measurements],
   );
 
   const calcRes = useMemo(() => {
@@ -117,17 +124,23 @@ function OutputItem({ output, changeOutput, onRemove }: OutputItemProps) {
       label: "均值",
       getValue: (p: number) =>
         meanNum !== null && meanNum.toPrecision(p) + unitStrWithSup,
+      autoPrecision: minDigits,
     },
     {
       label: "不确定度",
       getValue: (p: number) =>
         uncNum !== null && uncNum.toPrecision(p) + unitStrWithSup,
+      autoPrecision: Math.min(minDigits, 3),
     },
     {
       label: "格式化结果",
       getValue: (p: number) =>
         uncNum !== null &&
         formatUncertainty(meanNum, uncNum, p) + unitStrWithSup,
+      autoPrecision: Math.max(
+        Math.min(minDigits - getExp(meanNum || 0) + getExp(uncNum || 0), 2),
+        1,
+      ),
     },
     {
       label: "相对不确定度",
@@ -138,14 +151,17 @@ function OutputItem({ output, changeOutput, onRemove }: OutputItemProps) {
           ? (relativeU * 100).toPrecision(p) + "%"
           : relativeU.toPrecision(p);
       },
+      autoPrecision: Math.min(minDigits, 3),
     },
   ];
 
   const outputList = error ? (
     <div className="output-item text-red-500">{error}</div>
   ) : (
-    outputValues.map(({ label, getValue }, index) => {
-      const value = getValue(precisions[index]);
+    outputValues.map(({ label, getValue, autoPrecision }, index) => {
+      const value = getValue(
+        settings.autoAdjustDigits ? autoPrecision : precisions[index],
+      );
       return (
         <div
           key={index}
@@ -156,7 +172,7 @@ function OutputItem({ output, changeOutput, onRemove }: OutputItemProps) {
             dangerouslySetInnerHTML={{ __html: value || "-" }}
             className="flex-1"
           />
-          {value && (
+          {value && !settings.autoAdjustDigits && (
             <div className="flex items-center gap-1">
               <input
                 type="range"

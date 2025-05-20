@@ -2,6 +2,7 @@ import type { MathNode } from "mathjs";
 
 export interface Settings {
   firstLoad: boolean;
+  autoAdjustDigits: boolean;
   gravity: number;
 }
 
@@ -29,6 +30,7 @@ export interface DirectMeasurement extends BaseMeasurement {
   values: number[];
   unit: string;
   uncertaintyB: UncertaintyB[];
+  minDigits: number;
   mean: number?;
   u2: number?;
 }
