@@ -18,7 +18,7 @@ function SettingMenu({ close, setSettings }: SettingMenuProps) {
   const { settings } = useGlobalContext();
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
-  const handleSetGravity = () => {
+  function handleSetGravity() {
     const g_0 = 9.7803185;
     const a = 0.005278895;
     const b = 0.000023462;
@@ -40,7 +40,7 @@ function SettingMenu({ close, setSettings }: SettingMenuProps) {
         alert("获取位置信息失败: " + e.message);
       },
     );
-  };
+  }
 
   return (
     <div className="absolute top-10 right-0 w-66 z-100 border border-gray-200 rounded-lg shadow-lg text-black bg-white">
@@ -67,7 +67,7 @@ function SettingMenu({ close, setSettings }: SettingMenuProps) {
       </div>
 
       <div className="flex items-center justify-between p-3 text-sm">
-        <label className="text-gray-500">自动调整位数</label>
+        <label className="text-gray-500">自动调整输出精度</label>
         <label className="relative inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
@@ -104,7 +104,7 @@ function SettingMenu({ close, setSettings }: SettingMenuProps) {
         <button
           onClick={handleSetGravity}
           disabled={!navigator.geolocation || isLoadingLocation}
-          className={`ml-2 rounded p-1.5 transition-colors ${
+          className={`ml-3 rounded p-1.5 transition-colors ${
             navigator.geolocation && !isLoadingLocation
               ? "cursor-pointer text-blue-600 bg-blue-100 hover:bg-blue-200"
               : "cursor-not-allowed text-gray-500 bg-gray-200"
@@ -114,7 +114,7 @@ function SettingMenu({ close, setSettings }: SettingMenuProps) {
               ? "地理位置服务不可用"
               : isLoadingLocation
                 ? "正在获取位置..."
-                : "获取本地重力加速度"
+                : "获取当前位置重力加速度"
           }
         >
           {isLoadingLocation ? (

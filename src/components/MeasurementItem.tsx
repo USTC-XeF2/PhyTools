@@ -139,7 +139,13 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
   const unitValid = useRef(true);
   const showZeroError = useRef(false);
 
-  useEffect(() => setInputUnit(unit), [unit]);
+  useEffect(() => {
+    if (!unit) {
+      const name = measurement.name.latex.trim()[0];
+      if (name in nameUnitMap) handleUnitChange(nameUnitMap[name]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [measurement.name.latex]);
 
   const uBValid = useMemo(
     () =>
@@ -271,7 +277,7 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
             type="text"
             value={inputUnit}
             onChange={(e) => handleUnitChange(e.target.value)}
-            className={`plain-ipt w-${showZeroError.current ? 12 : 24} ${showRing(unitValid.current)}`}
+            className={`plain-ipt ${showZeroError.current ? "w-12" : "w-24"} ${showRing(unitValid.current)}`}
           />
           {showZeroError.current && (
             <>
@@ -395,12 +401,8 @@ function MeasurementItem({
           config={{ autoCommands }}
           onChange={(mathField) => {
             const expr = parseLatex(mathField.latex());
-            if (!isVariable(expr.parsedExpr, expr.latex)) {
+            if (!isVariable(expr.parsedExpr, expr.latex))
               expr.parsedExpr = null;
-            } else if (measurement.type === "direct" && !measurement.unit) {
-              const name = expr.latex.trim()[0];
-              if (name in nameUnitMap) measurement.unit = nameUnitMap[name];
-            }
             changeMeasurement({
               ...measurement,
               name: expr,
