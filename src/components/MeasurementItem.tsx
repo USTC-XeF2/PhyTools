@@ -134,7 +134,10 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
     values.length ? values.map(String) : [""],
   );
   const [inputUnit, setInputUnit] = useState(unit);
+  const [zeroError, setZeroError] = useState("");
+
   const unitValid = useRef(true);
+  const showZeroError = useRef(false);
 
   useEffect(() => setInputUnit(unit), [unit]);
 
@@ -161,30 +164,32 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
     setInputValues(newValues);
   }
 
-  function updateValues() {
+  function updateValues(_?: unknown, newUnit: string = unit) {
     const filteredValues = inputValues.filter(
       (v) => v !== "" && !isNaN(Number(v)),
     );
-    const newValues = filteredValues.map((v) => Number(v));
+    const zeroErrorValue = showZeroError.current
+      ? parseFloat(zeroError) || 0
+      : 0;
+    const newValues = filteredValues.map((v) => Number(v) - zeroErrorValue);
     const newMinDigits = Math.min(
       ...filteredValues.map((v) => v.split("e")[0].replace(".", "").length),
     );
     if (
-      values.length === newValues.length &&
-      values.every((v, i) => v === newValues[i]) &&
-      minDigits === newMinDigits
-    ) {
-      return;
-    }
-    changeMeasurement({
-      ...measurement,
-      values: newValues,
-      minDigits: newMinDigits,
-      mean: newValues.length ? mean(newValues) : null,
-      u2: newValues.length
-        ? (variance(...newValues) as number) / newValues.length
-        : null,
-    });
+      values.length !== newValues.length ||
+      values.every((v, i) => v !== newValues[i]) ||
+      minDigits !== newMinDigits
+    )
+      changeMeasurement({
+        ...measurement,
+        values: newValues,
+        unit: newUnit,
+        minDigits: newMinDigits,
+        mean: newValues.length ? mean(newValues) : null,
+        u2: newValues.length
+          ? (variance(...newValues) as number) / newValues.length
+          : null,
+      });
   }
 
   function handleKeyDown(
@@ -221,9 +226,15 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
 
   function handleUnitChange(value: string) {
     setInputUnit(value);
-    unitValid.current = parseUnit(value)?.value === null;
+    const u = parseUnit(value);
+    unitValid.current = u?.value === null;
+    showZeroError.current =
+      unitValid.current &&
+      u!.dimensions.every((v, i) => (i === 1 ? v === 1 : v === 0));
     if (unitValid.current && value !== unit)
-      changeMeasurement({ ...measurement, unit: value });
+      if (zeroError) updateValues(null, value);
+      else changeMeasurement({ ...measurement, unit: value });
+    if (!showZeroError.current) setZeroError("");
   }
 
   const valuelist = inputValues.map((value, index) => (
@@ -260,8 +271,21 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
             type="text"
             value={inputUnit}
             onChange={(e) => handleUnitChange(e.target.value)}
-            className={`plain-ipt w-24 ${showRing(unitValid.current)}`}
+            className={`plain-ipt w-${showZeroError.current ? 12 : 24} ${showRing(unitValid.current)}`}
           />
+          {showZeroError.current && (
+            <>
+              <label className="text-gray-500">零误差</label>
+              <input
+                type="text"
+                value={zeroError}
+                onChange={(e) => setZeroError(e.target.value)}
+                onBlur={updateValues}
+                placeholder="0"
+                className={`plain-ipt w-16 ${showRing(!zeroError || !isNaN(Number(zeroError)))}`}
+              />
+            </>
+          )}
         </div>
         <span className="text-gray-500">
           共 {values.filter((v) => v).length} 项
