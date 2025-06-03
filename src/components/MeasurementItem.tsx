@@ -136,23 +136,31 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
   const [inputUnit, setInputUnit] = useState(unit);
   const [zeroError, setZeroError] = useState("");
 
-  const unitValid = useRef(true);
-  const showZeroError = useRef(false);
+  const { unitValid, showZeroError } = useMemo(() => {
+    const u = parseUnit(inputUnit);
+    const unitValid = u?.value === null;
+    const showZeroError =
+      unitValid && u.dimensions.every((v, i) => (i === 1 ? v === 1 : v === 0));
+    if (!showZeroError) setZeroError("");
+    return { unitValid, showZeroError };
+  }, [inputUnit]);
+
+  useEffect(() => {
+    if (unitValid && inputUnit !== unit) updateValues(null, inputUnit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unitValid, inputUnit, unit, zeroError]);
 
   useEffect(() => {
     if (!unit) {
       const name = measurement.name.latex.trim()[0];
-      if (name in nameUnitMap) handleUnitChange(nameUnitMap[name]);
+      if (name in nameUnitMap) setInputUnit(nameUnitMap[name]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [measurement.name.latex]);
 
   const uBValid = useMemo(
-    () =>
-      uncertaintyB.map(
-        (u) => !u.value || parseUB(u.value, measurement.unit) !== null,
-      ),
-    [uncertaintyB, measurement.unit],
+    () => uncertaintyB.map((u) => !u.value || parseUB(u.value, unit) !== null),
+    [uncertaintyB, unit],
   );
 
   function insertInputValue(index: number, ...values: string[]) {
@@ -174,17 +182,18 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
     const filteredValues = inputValues.filter(
       (v) => v !== "" && !isNaN(Number(v)),
     );
-    const zeroErrorValue = showZeroError.current
-      ? parseFloat(zeroError) || 0
-      : 0;
+    const zeroErrorValue = showZeroError ? parseFloat(zeroError) || 0 : 0;
     const newValues = filteredValues.map((v) => Number(v) - zeroErrorValue);
-    const newMinDigits = Math.min(
-      ...filteredValues.map((v) => v.split("e")[0].replace(".", "").length),
-    );
+    const newMinDigits = filteredValues.length
+      ? Math.min(
+          ...filteredValues.map((v) => v.split("e")[0].replace(".", "").length),
+        )
+      : 0;
     if (
+      newUnit ||
+      minDigits !== newMinDigits ||
       values.length !== newValues.length ||
-      values.every((v, i) => v !== newValues[i]) ||
-      minDigits !== newMinDigits
+      values.some((v, i) => v !== newValues[i])
     )
       changeMeasurement({
         ...measurement,
@@ -230,19 +239,6 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
     }
   }
 
-  function handleUnitChange(value: string) {
-    setInputUnit(value);
-    const u = parseUnit(value);
-    unitValid.current = u?.value === null;
-    showZeroError.current =
-      unitValid.current &&
-      u!.dimensions.every((v, i) => (i === 1 ? v === 1 : v === 0));
-    if (unitValid.current && value !== unit)
-      if (zeroError) updateValues(null, value);
-      else changeMeasurement({ ...measurement, unit: value });
-    if (!showZeroError.current) setZeroError("");
-  }
-
   const valuelist = inputValues.map((value, index) => (
     <input
       key={index}
@@ -276,10 +272,10 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
           <input
             type="text"
             value={inputUnit}
-            onChange={(e) => handleUnitChange(e.target.value)}
-            className={`plain-ipt ${showZeroError.current ? "w-12" : "w-24"} ${showRing(unitValid.current)}`}
+            onChange={(e) => setInputUnit(e.target.value)}
+            className={`plain-ipt ${showZeroError ? "w-12" : "w-24"} ${showRing(unitValid)}`}
           />
-          {showZeroError.current && (
+          {showZeroError && (
             <>
               <label className="text-gray-500">零误差</label>
               <input

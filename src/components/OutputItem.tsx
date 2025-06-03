@@ -63,12 +63,6 @@ function OutputItem({ output, changeOutput, onRemove }: OutputItemProps) {
     [settings],
   );
 
-  const minDigits = useMemo(
-    () =>
-      measurement ? Math.min(10, getMinDigits(measurement, measurements)) : 0,
-    [measurement, measurements],
-  );
-
   const calcRes = useMemo(() => {
     if (!measurement) return null;
     try {
@@ -119,6 +113,13 @@ function OutputItem({ output, changeOutput, onRemove }: OutputItemProps) {
         return `${unit}<sup>${exponent}</sup>`;
       })
     : "";
+  const minDigits = useMemo(
+    () =>
+      measurement && !error
+        ? Math.min(10, getMinDigits(measurement, measurements))
+        : 0,
+    [measurement, error, measurements],
+  );
   const outputValues = [
     {
       label: "均值",
