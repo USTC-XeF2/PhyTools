@@ -6,7 +6,7 @@ export interface Settings {
   gravity: number;
 }
 
-interface Expr {
+export interface Expr {
   latex: string;
   expr: string;
   parsedExpr: MathNode?;

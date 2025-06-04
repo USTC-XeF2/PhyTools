@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { mean, variance } from "mathjs";
-import { EditableMathField } from "react-mathquill";
 
-import { parseLatex, parseUnit, parseUB, isVariable } from "../utils/math-core";
+import { parseUnit, parseUB, isVariable } from "../utils/math-core";
+import { TextInput, MathInput } from "./Inputs";
 
 import type {
   Distribution,
@@ -39,11 +39,6 @@ interface MeasurementItemProps {
   deleteMeasurement: () => void;
 }
 
-const showRing = (normal: unknown) =>
-  normal
-    ? "focus-within:z-10 focus-within:ring-1 focus-within:ring-blue-400"
-    : "z-9 ring-1 ring-red-400";
-
 const distributions = {
   normal: ["正态分布", "输入值÷3"],
   uniform: ["均匀分布", "输入值÷√3"],
@@ -61,8 +56,6 @@ const nameUnitMap: Record<string, string> = {
   U: "V",
   I: "A",
 };
-
-const autoCommands = "alpha beta eta gamma lambda mu phi pi rho theta";
 
 function UncertaintyBInput({
   uncertainty,
@@ -89,8 +82,7 @@ function UncertaintyBInput({
 
   return (
     <div ref={containerRef}>
-      <input
-        type="text"
+      <TextInput
         value={value}
         onChange={(e) => {
           onChange(e.target.value, distribution);
@@ -103,7 +95,8 @@ function UncertaintyBInput({
             onDelete();
           }
         }}
-        className={`plain-ipt w-20 ${showRing(isValid)}`}
+        normalRing={isValid}
+        className="plain-ipt w-20"
       />
       <div
         className={`absolute z-50 w-20 mt-1 border border-gray-200 rounded divide-y divide-gray-200 shadow-lg text-gray-500 bg-white
@@ -240,9 +233,8 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
   }
 
   const valuelist = inputValues.map((value, index) => (
-    <input
+    <TextInput
       key={index}
-      type="text"
       value={value}
       placeholder={index === 0 ? "输入测量值" : ""}
       onChange={(e) => insertInputValue(index, e.target.value)}
@@ -258,8 +250,8 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
       }}
       onBlur={updateValues}
       onKeyDown={(e) => handleKeyDown(index, e)}
-      className={`w-22 h-10 border-r border-b border-gray-300 outline-none px-2 py-1 text-center bg-gray-50 placeholder:text-sm
-        ${showRing(!isNaN(Number(value)))}`}
+      normalRing={!isNaN(Number(value))}
+      className="w-22 h-10 border-r border-b border-gray-300 outline-none px-2 py-1 text-center bg-gray-50 placeholder:text-sm"
     />
   ));
 
@@ -269,29 +261,27 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
       <div className="flex justify-between items-center h-10 px-2 py-1 bg-gray-100 text-sm">
         <div className="flex items-center gap-2">
           <label className="text-gray-500">单位</label>
-          <input
-            type="text"
+          <TextInput
             value={inputUnit}
             onChange={(e) => setInputUnit(e.target.value)}
-            className={`plain-ipt ${showZeroError ? "w-12" : "w-24"} ${showRing(unitValid)}`}
+            normalRing={unitValid}
+            className={`plain-ipt ${showZeroError ? "w-12" : "w-24"}`}
           />
           {showZeroError && (
             <>
               <label className="text-gray-500">零误差</label>
-              <input
-                type="text"
+              <TextInput
                 value={zeroError}
                 onChange={(e) => setZeroError(e.target.value)}
                 onBlur={updateValues}
                 placeholder="0"
-                className={`plain-ipt w-16 ${showRing(!zeroError || !isNaN(Number(zeroError)))}`}
+                normalRing={!zeroError || !isNaN(Number(zeroError))}
+                className="plain-ipt w-16"
               />
             </>
           )}
         </div>
-        <span className="text-gray-500">
-          共 {values.filter((v) => v).length} 项
-        </span>
+        <span className="text-gray-500">共 {values.length} 项</span>
       </div>
       <div className="flex items-center gap-2 h-10 px-2 py-1 text-sm">
         <label className="text-gray-500">B类不确定度</label>
@@ -346,32 +336,26 @@ function CompositePanel({
   const [iptFormula, setIptFormula] = useState(measurement.formula);
   const { latex, parsedExpr } = iptFormula;
   return (
-    <div
-      className={`relative min-h-12 rounded-r-lg
-        ${showRing(!latex || parsedExpr)}`}
+    <MathInput
+      latex={latex}
+      onChange={(latex) => setIptFormula(latex)}
+      onBlur={() => {
+        if (measurement.formula.latex !== iptFormula.latex)
+          changeMeasurement({
+            ...measurement,
+            formula: iptFormula,
+          });
+      }}
+      normalRing={!latex || !!parsedExpr}
+      className="relative min-h-12 rounded-r-lg"
+      fieldClassName="w-full px-2 py-1"
     >
-      <EditableMathField
-        latex={latex}
-        config={{
-          supSubsRequireOperand: true,
-          autoCommands,
-        }}
-        onChange={(mathField) => setIptFormula(parseLatex(mathField.latex()))}
-        onBlur={() => {
-          if (measurement.formula.latex !== iptFormula.latex)
-            changeMeasurement({
-              ...measurement,
-              formula: iptFormula,
-            });
-        }}
-        className="w-full px-2 py-1"
-      />
       {!latex && (
         <div className="absolute flex items-center px-2 inset-0 pointer-events-none text-gray-400">
           输入合成测量量表达式
         </div>
       )}
-    </div>
+    </MathInput>
   );
 }
 
@@ -389,24 +373,19 @@ function MeasurementItem({
       <div className="idx-mark rounded-tl-md rounded-br-md px-1">
         {mIndex + 1}
       </div>
-      <div
-        className={`rounded-l-lg ${showRing(parsedExpr && !isNameExist(latex))}`}
-      >
-        <EditableMathField
-          latex={latex}
-          config={{ autoCommands }}
-          onChange={(mathField) => {
-            const expr = parseLatex(mathField.latex());
-            if (!isVariable(expr.parsedExpr, expr.latex))
-              expr.parsedExpr = null;
-            changeMeasurement({
-              ...measurement,
-              name: expr,
-            });
-          }}
-          className="w-16 px-1 py-1 text-center"
-        />
-      </div>
+      <MathInput
+        latex={latex}
+        onChange={(expr) => {
+          if (!isVariable(expr.parsedExpr, expr.latex)) expr.parsedExpr = null;
+          changeMeasurement({
+            ...measurement,
+            name: expr,
+          });
+        }}
+        normalRing={!!parsedExpr && !isNameExist(latex)}
+        className="rounded-l-lg"
+        fieldClassName="w-16 px-1 py-1 text-center"
+      />
       <div className="flex flex-col w-full border-l-2 border-blue-200 divide-y divide-gray-300">
         {measurement.type === "direct" ? (
           <DirectPanel
