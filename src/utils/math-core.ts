@@ -1,4 +1,14 @@
-import { derivative, multiply, parse, pow, sqrt, sum, unit } from "mathjs";
+import {
+  derivative,
+  mean as meanFn,
+  multiply,
+  parse,
+  pow,
+  sqrt,
+  sum,
+  unit,
+  variance,
+} from "mathjs";
 import {
   convertAsciiMathToLatex,
   convertLatexToAsciiMath,
@@ -121,8 +131,8 @@ export const mean = (
   constants: Values,
 ) => {
   if (measurement.type === "direct") {
-    return measurement.mean !== null
-      ? unit(`${measurement.mean} ${measurement.unit}`)
+    return measurement.values.length
+      ? unit(`${meanFn(measurement.values)} ${measurement.unit}`)
       : null;
   }
   const dependency = getDependency(measurement, measurements);
@@ -157,8 +167,9 @@ const getU2 = (
   if (measurement.type === "direct") {
     let sumU2 = 0;
     if (displayUTypes.typeA) {
-      if (measurement.u2 === null) return null;
-      sumU2 += measurement.u2;
+      const { values } = measurement;
+      if (!values.length) return null;
+      sumU2 += (variance(...values) as number) / values.length;
     }
     if (displayUTypes.typeB) {
       sumU2 += sum(

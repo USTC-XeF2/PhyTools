@@ -31,8 +31,6 @@ export interface DirectMeasurement extends BaseMeasurement {
   unit: string;
   uncertaintyB: UncertaintyB[];
   minDigits: number;
-  mean: number?;
-  u2: number?;
 }
 
 export interface CompositeMeasurement extends BaseMeasurement {

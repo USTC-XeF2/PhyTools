@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { mean, variance } from "mathjs";
 
 import { parseUnit, parseUB, isVariable } from "../utils/math-core";
 import { TextInput, MathInput } from "./Inputs";
@@ -183,7 +182,7 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
         )
       : 0;
     if (
-      newUnit ||
+      newUnit !== unit ||
       minDigits !== newMinDigits ||
       values.length !== newValues.length ||
       values.some((v, i) => v !== newValues[i])
@@ -192,11 +191,7 @@ function DirectPanel({ measurement, changeMeasurement }: DirectPanelProps) {
         ...measurement,
         values: newValues,
         unit: newUnit,
-        minDigits: newMinDigits,
-        mean: newValues.length ? mean(newValues) : null,
-        u2: newValues.length
-          ? (variance(...newValues) as number) / newValues.length
-          : null,
+        minDigits: newValues.length === 1 && !newUnit ? 99 : newMinDigits,
       });
   }
 

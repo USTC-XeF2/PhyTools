@@ -19,8 +19,6 @@ export const createDirectMeasurement = (
     distribution: "normal",
   })),
   minDigits: 0,
-  mean: null,
-  u2: null,
 });
 
 export const createCompositeMeasurement = (
